@@ -3,7 +3,7 @@ version: '3.7'
 services:
   mysql:
     image: mysql:latest
-    container_name: mysql-stakepad
+    container_name: mysql-githutwizard
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
