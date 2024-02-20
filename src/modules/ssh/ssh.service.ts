@@ -11,11 +11,11 @@ import { configDto } from './dto/config.dto';
 @Injectable()
 export class SshService {
     private readonly logger = new Logger(SshService.name);
-    private readonly sshDirPath = './temporary_ssh';
+    private readonly sshDirPath = 'temporary_ssh';
     private readonly githubUsername = 'lalocesar2003';
     private readonly githubEmail = 'ceed1000@gmail.com';
     private get gitKeysPath(): string {
-      return path.join(__dirname, this.sshDirPath);
+      return path.join(__dirname, '../../../temporary_ssh');
     }
     private get privateKeyPath(): string {
       return `${this.gitKeysPath}/id_rsa_${this.githubUsername}`;
@@ -50,7 +50,7 @@ export class SshService {
     async privateKeyPathwithdatabase(username:configDto) {
       const { githubusername } = await this.getConfig(username);
       // si funciona no olvides modificar la /
-      return `${this.gitKeysPath}\id_rsa_${githubusername}`;
+      return `${this.gitKeysPath}\\\\id_rsa_${githubusername}`;
   }
 
  async publicKeyPathwithdatabase(username:configDto) {
@@ -61,6 +61,8 @@ export class SshService {
     async generateSSHKey(username:configDto) {
       const {githubemail}=await this.getConfig(username);
       const privateKeyPath = await this.privateKeyPathwithdatabase(username);
+      console.log(privateKeyPath);
+      
       if (!fs.existsSync(this.sshDirPath)) {
         fs.mkdirSync(this.sshDirPath, { recursive: true });
       }
@@ -79,9 +81,9 @@ export class SshService {
             return;
           }
           this.logger.log(`SSH key generated successfully: ${stdout}`);
-          this.addKeyToSshAgent(username);
-          this.updateSshConfig(username);
-          this.logPublicKey(username);
+          // this.addKeyToSshAgent(username);
+          // this.updateSshConfig(username);
+          // this.logPublicKey(username);
         });
       }
     }

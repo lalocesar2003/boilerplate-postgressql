@@ -13,6 +13,6 @@ export class metadataDto {
     @IsEmail()
     @IsNotEmpty()
     @IsString()
-    mail: string;
+    email: string;
 
 }
