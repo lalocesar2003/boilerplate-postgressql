@@ -10,6 +10,7 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CommitEntity } from './commit.entity';
+import { log } from 'console';
 
 @Injectable()
 export class GitService implements OnModuleInit{
@@ -93,9 +94,14 @@ if (!fs.existsSync(this.gitRepoPath)) {
             // Omitir el comando de añadir el remoto ya que ya existe
           ];
         }
-        this.executeCommandsSequentially(commands, () => {
+        this.executeCommandsSequentially(commands, async () => {
           console.log("Setup finished");
-          this.processInitialCommits(name,mail);
+          const hasCommits = await this.checkIfCommitsExist();
+          if (!hasCommits) {
+          this.processInitialCommits(name,mail); } else {
+          console.log("ya se ejecuto");
+          
+          }
         });
       });
       }
@@ -112,6 +118,13 @@ if (!fs.existsSync(this.gitRepoPath)) {
           callback();
         }
       }
+      
+async checkIfCommitsExist(): Promise<boolean> {
+  // Verificar en la base de datos si ya existen commits procesados
+  const commitCount = await this.commitRepository.count();
+  return commitCount > 0;
+}
+
       processInitialCommits(name,mail) {
         const logListOfCommitsInOrigin = `git log --pretty=format:"%H %ae"`;
         exec(logListOfCommitsInOrigin, (logError, logStdout, logStderr) => {
@@ -249,8 +262,11 @@ private async loadCommits() {
 }
 
 private processCommit(commitHash: string,mail:string) {
+  console.log(commitHash);
   
   const cherryPickLastCommit = `git cherry-pick ${commitHash}`;
+  console.log(cherryPickLastCommit);
+  
   exec(cherryPickLastCommit, { cwd: this.gitRepoPath }, async (cherryPickError, cherryPickStdout) => {
     if (cherryPickError) {
       this.logger.error(`Error cherry-picking commit ${commitHash}: ${cherryPickError.message}`);
@@ -265,7 +281,11 @@ private processCommit(commitHash: string,mail:string) {
       }
 
       const [lastCommitHash, lastCommitAuthor] = logStdout.trim().split(' ');
+      
+      
       if (lastCommitAuthor !== mail) {
+        console.log("si me ejecuto por l ptmr");
+        
        
         const gitAmendCommand = `git commit --amend --author="Author Name <AuthorEmail>" -C ${lastCommitHash}`;
         exec(gitAmendCommand, { cwd: this.gitRepoPath }, (amendError, amendStdout) => {
@@ -274,6 +294,10 @@ private processCommit(commitHash: string,mail:string) {
             return;
           }
           const gitPushCommand = `git push ${this.copyRemoteName} main`;
+        
+          
+console.log(gitPushCommand);
+
           exec(gitPushCommand, { cwd: this.gitRepoPath }, (pushError, pushStdout) => {
             if (pushError) {
               this.logger.error(`Error pushing to copy repo: ${pushError.message}`);
