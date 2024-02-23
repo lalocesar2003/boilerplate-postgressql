@@ -86,7 +86,7 @@ export class SshService {
           return;
         }
         this.logger.log(`SSH key generated successfully: ${stdout}`);
-        // this.addKeyToSshAgent(username);
+        this.addKeyToSshAgent(username);
         // this.updateSshConfig(username);
         this.logPublicKey(username);
       });
@@ -97,6 +97,9 @@ export class SshService {
     const privateKeyPath = await this.privateKeyPathwithdatabase(username);
     const sshAddCommand = `ssh-add ${privateKeyPath}`;
     exec(sshAddCommand, (addError, addStdout, addStderr) => {
+      console.log(addError);
+      console.log(addStdout);
+      console.log(addStderr);
       if (addError) {
         this.logger.error(`Error adding SSH key to agent: ${addError.message}`);
         return;

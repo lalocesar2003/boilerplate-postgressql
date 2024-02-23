@@ -100,6 +100,8 @@ export class GitService implements OnModuleInit {
           `git config user.email "${mail}"`,
           `git remote add ${this.copyRemoteName} ${(await userFound).linkcopyrepo}`,
         ];
+
+        console.log(commands);
       } else {
 
         commands = [
