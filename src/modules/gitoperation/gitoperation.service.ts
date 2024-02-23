@@ -284,7 +284,7 @@ private processCommit(commitHash: string,mail:string) {
       
       
       if (lastCommitAuthor !== mail) {
-        console.log("si me ejecuto por l ptmr");
+    
         
        
         const gitAmendCommand = `git commit --amend --author="Author Name <AuthorEmail>" -C ${lastCommitHash}`;
