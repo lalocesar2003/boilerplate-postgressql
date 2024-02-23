@@ -4,17 +4,14 @@ import { metadataDto } from './dto/metadata.dto';
 import { cloneDto } from './dto/clone.dto';
 @Controller('gitoperation')
 export class GitoperationController {
-    
-    constructor(private gitoperation:GitService){}
+  constructor(private gitoperation: GitService) {}
 
-@Post('metadata')
-getrepostandmetada(@Body() newuser:metadataDto){
-
-    return this.gitoperation.createMetadata(newuser)
-}
-@Post('clone')
-cloneandsetup(@Body() username:cloneDto){
-    return this.gitoperation.cloneAndSetupRepo(username)
-}
-
+  @Post('metadata')
+  getrepostandmetada(@Body() newuser: metadataDto) {
+    return this.gitoperation.createMetadata(newuser);
+  }
+  @Post('clone')
+  cloneandsetup(@Body() username: cloneDto) {
+    return this.gitoperation.cloneAndSetupRepo(username);
+  }
 }

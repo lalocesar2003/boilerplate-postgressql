@@ -1,8 +1,8 @@
 {
-  "name": "boilerplatev2",
+  "name": "github-wizard",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "A bot that automates actions on github",
+  "author": "Quantum3 Labs",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "docker:db:up": "docker-compose --env-file .env up -d",
+    "docker:db:down": "docker-compose --env-file .env down"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.3",

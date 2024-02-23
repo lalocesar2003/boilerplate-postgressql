@@ -6,14 +6,14 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from 'src/common/interceptor/current-user.interceptor';
 
 @Module({
-  imports:[UserModule],
-  providers: [AuthService,{
-    
-    provide:APP_INTERCEPTOR,
-    useClass:CurrentUserInterceptor
-
-  
-  }],
-  controllers: [AuthController]
+  imports: [UserModule],
+  providers: [
+    AuthService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CurrentUserInterceptor,
+    },
+  ],
+  controllers: [AuthController],
 })
 export class AuthModule {}

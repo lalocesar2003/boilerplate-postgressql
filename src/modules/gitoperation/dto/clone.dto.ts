@@ -1,6 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class cloneDto {
-
-    @IsNotEmpty()
-    linkoriginalrepo: string;
+  @IsNotEmpty()
+  linkoriginalrepo: string;
 }
