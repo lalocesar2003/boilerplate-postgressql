@@ -50,7 +50,7 @@ export class SshService {
     async privateKeyPathwithdatabase(username:configDto) {
       const { githubusername } = await this.getConfig(username);
       // si funciona no olvides modificar la /
-      return `${this.gitKeysPath}\\\\id_rsa_${githubusername}`;
+      return `${this.gitKeysPath}\\id_rsa_${githubusername}`;
   }
 
  async publicKeyPathwithdatabase(username:configDto) {
@@ -81,9 +81,9 @@ export class SshService {
             return;
           }
           this.logger.log(`SSH key generated successfully: ${stdout}`);
-          // this.addKeyToSshAgent(username);
-          // this.updateSshConfig(username);
-          // this.logPublicKey(username);
+           this.addKeyToSshAgent(username);
+          this.updateSshConfig(username);
+         this.logPublicKey(username);
         });
       }
     }
