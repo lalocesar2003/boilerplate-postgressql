@@ -4,6 +4,7 @@ import { User } from '../modules/user/user.entity';
 import {ConfigModule,ConfigService} from '@nestjs/config';
 import { Metadata } from 'src/modules/gitoperation/gitoperation.entity';
 import { sshdata } from 'src/modules/ssh/ssh.entity';
+import { CommitEntity } from 'src/modules/gitoperation/commit.entity';
 @Module({ imports: [
     TypeOrmModule.forRootAsync({
         imports: [ConfigModule],
@@ -17,7 +18,7 @@ import { sshdata } from 'src/modules/ssh/ssh.entity';
             username: configService.get('DB_USERNAME'),
             password: configService.get('DB_PASSWORD'),
             database: configService.get('DB_NAME'),
-            entities: [User,Metadata,sshdata],
+            entities: [User,Metadata,sshdata,CommitEntity],
             synchronize: true,
             }
         },

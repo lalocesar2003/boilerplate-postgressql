@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Metadata } from './gitoperation.entity';
 import { Repository } from 'typeorm';
@@ -9,9 +9,10 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CommitEntity } from './commit.entity';
 
 @Injectable()
-export class GitService {
+export class GitService implements OnModuleInit{
   private readonly logger = new Logger(GitService.name);
   private cronJobActive = false; 
   private readonly repoTempName: string = 'temp_repo';
@@ -21,8 +22,12 @@ export class GitService {
   private alreadyVisitedCommits = [];
   private pendingVisitCommits = [];
   private commitsToBeProcessedOnSetup = [];
-    constructor(@InjectRepository(Metadata) private metadataRepository: Repository<Metadata>) {
+    constructor(@InjectRepository(Metadata) private metadataRepository: Repository<Metadata>, @InjectRepository(CommitEntity) private commitRepository: Repository<CommitEntity>) {
     }
+  async onModuleInit() {
+    await this.loadCommits();
+    await this.checkoutLastProcessedCommit();
+  }
 
     async createMetadata(data:metadataDto) { 
         const userFound =await this.metadataRepository.findOne({where:{linkoriginalrepo:data.linkoriginalrepo}});
@@ -71,6 +76,8 @@ if (!fs.existsSync(this.gitRepoPath)) {
       exec(checkRemoteCommand, async (error, stdout, stderr) => {
         let commands;
         if (error) {
+          console.log("primera vez que se configura el setup");
+          
           // El remoto 'copy' no existe, añadirlo
           commands = [
             `git config user.name "${name}"`,
@@ -78,7 +85,8 @@ if (!fs.existsSync(this.gitRepoPath)) {
             `git remote add ${this.copyRemoteName} ${(await (userFound)).linkcopyrepo}`
           ];
         } else {
-          // El remoto 'copy' ya existe, omitir el paso de añadirlo
+   console.log("segunda vez que se configura el stup");
+   
           commands = [
             `git config user.name "${name}"`,
             `git config user.email "${mail}"`
@@ -128,11 +136,13 @@ if (!fs.existsSync(this.gitRepoPath)) {
               return;
             }
             const amendCommand = `git commit --amend --author="${name} <${mail}>" -C ${firstCommitHash}`;
-            exec(amendCommand, (amendError, amendStdout, amendStderr) => {
+            exec(amendCommand, async (amendError, amendStdout, amendStderr) => {
               if (amendError) {
                 this.logger.error(`Error amending commit: ${amendError.message}`);
                 return;
               }
+              await this.markCommitAsVisited(firstCommitHash).catch(error => this.logger.error(`Error marking commit as visited: ${error.message}`));
+            
               this.alreadyVisitedCommits.push(firstCommitHash);
             
             });
@@ -140,6 +150,27 @@ if (!fs.existsSync(this.gitRepoPath)) {
         });
        
       }
+    
+      private async checkoutLastProcessedCommit() {
+        const lastVisitedCommit = await this.commitRepository.findOne({
+          where: { visited: true },
+          order: { id: 'DESC' } // Asumiendo que 'id' es un campo autoincremental
+        });
+      
+        if (lastVisitedCommit) {
+          this.logger.log(`Checking out to last visited commit: ${lastVisitedCommit.commitHash}`);
+          exec(`git checkout ${lastVisitedCommit.commitHash}`, { cwd: this.gitRepoPath }, (error, stdout, stderr) => {
+            if (error) {
+              this.logger.error(`Error checking out to last visited commit: ${error.message}`);
+              return;
+            }
+            // Aquí puedes agregar más lógica si es necesario después del checkout
+          });
+        } else {
+          this.logger.log('No visited commits found, staying on current commit.');
+        }
+      }
+      
      
      @Cron(CronExpression.EVERY_30_SECONDS)
  async handleCron(mail:string){
@@ -155,6 +186,16 @@ if (!fs.existsSync(this.gitRepoPath)) {
   console.log("already visited commits", this.alreadyVisitedCommits);
   await this.checkForNewCommits(mail);
 }    
+private async markCommitAsVisited(commitHash: string) {
+  let commit = await this.commitRepository.findOne({where: {commitHash}});
+  if (!commit) {
+    commit = this.commitRepository.create({commitHash, visited: true});
+  } else {
+    commit.visited = true;
+  }
+  await this.commitRepository.save(commit);
+}
+
 private async checkForNewCommits(mail:string) {
   
   const gitFetchCommand = "git fetch";
@@ -194,10 +235,23 @@ private async checkForNewCommits(mail:string) {
     });
   });
 }
+private async loadCommits() {
+  const visitedCommits = await this.commitRepository.find({where: {visited: true}});
+  this.alreadyVisitedCommits = visitedCommits.map(commit => commit.commitHash);
+
+  const pendingCommits = await this.commitRepository.find({where: {pending: true}});
+  this.pendingVisitCommits = pendingCommits.map(commit => commit.commitHash);
+
+  this.logger.log(`Loaded ${visitedCommits.length} visited and ${pendingCommits.length} pending commits from the database.`);
+
+
+  // Similar para commitsToBeProcessedOnSetup si es necesario
+}
+
 private processCommit(commitHash: string,mail:string) {
   
   const cherryPickLastCommit = `git cherry-pick ${commitHash}`;
-  exec(cherryPickLastCommit, { cwd: this.gitRepoPath }, (cherryPickError, cherryPickStdout) => {
+  exec(cherryPickLastCommit, { cwd: this.gitRepoPath }, async (cherryPickError, cherryPickStdout) => {
     if (cherryPickError) {
       this.logger.error(`Error cherry-picking commit ${commitHash}: ${cherryPickError.message}`);
       return;
@@ -232,6 +286,7 @@ private processCommit(commitHash: string,mail:string) {
         this.logger.log(`Commit ${lastCommitHash} by ${lastCommitAuthor} matches the author email. Skipping amend.`);
       }
     });
+   await this.markCommitAsVisited(commitHash).catch(error => this.logger.error(`Error marking commit as visited: ${error.message}`));
 
   
     this.alreadyVisitedCommits.push(commitHash);
