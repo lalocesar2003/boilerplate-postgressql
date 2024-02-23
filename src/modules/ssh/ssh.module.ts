@@ -7,6 +7,6 @@ import { sshdata } from './ssh.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([sshdata])],
   providers: [SshService],
-  controllers: [SshController]
+  controllers: [SshController],
 })
 export class SshModule {}

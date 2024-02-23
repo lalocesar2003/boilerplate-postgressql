@@ -1,27 +1,21 @@
-import {Entity,Column,PrimaryGeneratedColumn} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class Metadata {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @PrimaryGeneratedColumn()
-    id: number;
+  @Column()
+  linkoriginalrepo: string;
 
-    @Column()
-    linkoriginalrepo: string;
+  @Column()
+  linkcopyrepo: string;
 
+  @Column()
+  username: string;
 
-    @Column()
-    linkcopyrepo: string;
+  @Column({ nullable: true })
+  email: string;
 
-    @Column()
-    username: string;
-   
-    @Column({nullable : true})
-    email: string;
-
-    @Column({type:'datetime',default: () => 'CURRENT_TIMESTAMP'})
-    createAt: Date;
-
-
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  createAt: Date;
 }
-
-

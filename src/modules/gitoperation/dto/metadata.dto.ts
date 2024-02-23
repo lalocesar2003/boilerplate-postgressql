@@ -1,18 +1,16 @@
-import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class metadataDto {
-    @IsNotEmpty()
-    linkoriginalrepo: string;
+  @IsNotEmpty()
+  linkoriginalrepo: string;
 
-    @IsNotEmpty()
-    linkcopyrepo:string
+  @IsNotEmpty()
+  linkcopyrepo: string;
 
-    @IsNotEmpty()
-    username: string;
+  @IsNotEmpty()
+  username: string;
 
-    
-    @IsEmail()
-    @IsNotEmpty()
-    @IsString()
-    email: string;
-
+  @IsEmail()
+  @IsNotEmpty()
+  @IsString()
+  email: string;
 }
