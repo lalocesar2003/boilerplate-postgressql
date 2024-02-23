@@ -39,13 +39,10 @@ export class AuthController {
   @Post('/signout')
   signout(@Session() session: any) {
     session.userId = null;
-    console.log(session.userId);
   }
   @Post('/signup')
   async createUser(@Body() body: createUserDto, @Session() session: any) {
     const user: any = await this.authService.signup(body);
-    console.log(user.id);
-
     session.userId = user.id;
     return user;
   }

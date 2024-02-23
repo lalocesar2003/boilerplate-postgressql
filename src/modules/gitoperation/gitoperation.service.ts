@@ -47,7 +47,6 @@ export class GitService implements OnModuleInit {
     const userFound = await this.metadataRepository.findOne({
       where: { linkoriginalrepo: data.linkoriginalrepo },
     });
-    console.log(userFound);
 
     if (userFound) {
       return new HttpException('User already exists', HttpStatus.BAD_REQUEST);
@@ -94,7 +93,6 @@ export class GitService implements OnModuleInit {
     exec(checkRemoteCommand, async (error, stdout, stderr) => {
       let commands;
       if (error) {
-        console.log('primera vez que se configura el setup');
 
         // El remoto 'copy' no existe, añadirlo
         commands = [
@@ -103,7 +101,6 @@ export class GitService implements OnModuleInit {
           `git remote add ${this.copyRemoteName} ${(await userFound).linkcopyrepo}`,
         ];
       } else {
-        console.log('segunda vez que se configura el stup');
 
         commands = [
           `git config user.name "${name}"`,
@@ -112,12 +109,10 @@ export class GitService implements OnModuleInit {
         ];
       }
       this.executeCommandsSequentially(commands, async () => {
-        console.log('Setup finished');
         const hasCommits = await this.checkIfCommitsExist();
         if (!hasCommits) {
           this.processInitialCommits(name, mail);
         } else {
-          console.log('ya se ejecuto');
         }
       });
     });
@@ -217,8 +212,6 @@ export class GitService implements OnModuleInit {
   @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron(mail: string) {
     if (!this.cronJobActive) {
-      console.log('no hare nada');
-
       return;
     }
 
