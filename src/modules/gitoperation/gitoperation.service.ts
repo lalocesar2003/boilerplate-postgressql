@@ -32,6 +32,8 @@ export class GitService implements OnModuleInit {
   private alreadyVisitedCommits = [];
   private pendingVisitCommits = [];
   private commitsToBeProcessedOnSetup = [];
+  private cronJobArguments: string=null; 
+
   constructor(
     @InjectRepository(Metadata)
     private metadataRepository: Repository<Metadata>,
@@ -52,7 +54,9 @@ export class GitService implements OnModuleInit {
       return new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
     const newUser = this.metadataRepository.create(data);
+
     return this.metadataRepository.save(newUser);
+   
   }
 
   async cloneAndSetupRepo(linkoriginalrepo: cloneDto) {
@@ -80,6 +84,8 @@ export class GitService implements OnModuleInit {
       this.setupGitConfig(linkoriginalrepo);
     }
     this.cronJobActive = true;
+    this.cronJobArguments=linkoriginalrepo.linkoriginalrepo
+
   }
 
   async setupGitConfig(linkoriginalrepo: cloneDto) {
@@ -93,7 +99,6 @@ export class GitService implements OnModuleInit {
     exec(checkRemoteCommand, async (error, stdout, stderr) => {
       let commands;
       if (error) {
-
         // El remoto 'copy' no existe, añadirlo
         commands = [
           `git config user.name "${name}"`,
@@ -103,7 +108,6 @@ export class GitService implements OnModuleInit {
 
         console.log(commands);
       } else {
-
         commands = [
           `git config user.name "${name}"`,
           `git config user.email "${mail}"`,
@@ -212,15 +216,30 @@ export class GitService implements OnModuleInit {
   }
 
   @Cron(CronExpression.EVERY_30_SECONDS)
-  async handleCron(mail: string) {
+
+
+  async handleCron() {
+ 
+    
+    const userFound = this.metadataRepository.findOne({
+      where: { linkoriginalrepo: this.cronJobArguments },
+    });
+    const username = (await userFound).username;
+    const mail = (await userFound).email;
+
+    
+    
+    
     if (!this.cronJobActive) {
+      console.log('no hare nadas');
+     
       return;
     }
 
     this.logger.debug('Running cron job');
     console.log('pending commits', this.pendingVisitCommits);
     console.log('already visited commits', this.alreadyVisitedCommits);
-    await this.checkForNewCommits(mail);
+    await this.checkForNewCommits(mail,username);
   }
   private async markCommitAsVisited(commitHash: string) {
     let commit = await this.commitRepository.findOne({ where: { commitHash } });
@@ -232,7 +251,7 @@ export class GitService implements OnModuleInit {
     await this.commitRepository.save(commit);
   }
 
-  private async checkForNewCommits(mail: string) {
+  private async checkForNewCommits(mail: string,username:string) {
     const gitFetchCommand = 'git fetch';
     exec(gitFetchCommand, { cwd: this.gitRepoPath }, (fetchError) => {
       if (fetchError) {
@@ -276,7 +295,7 @@ export class GitService implements OnModuleInit {
 
           const commitToVisit = this.pendingVisitCommits.shift();
           this.logger.log(`Visiting commit ${commitToVisit}`);
-          this.processCommit(commitToVisit, mail);
+          this.processCommit(commitToVisit, mail,username);
         },
       );
     });
@@ -303,7 +322,9 @@ export class GitService implements OnModuleInit {
     // Similar para commitsToBeProcessedOnSetup si es necesario
   }
 
-  private processCommit(commitHash: string, mail: string) {
+  private processCommit(commitHash: string, mail: string,username:string) {
+    
+    
     console.log(commitHash);
 
     const cherryPickLastCommit = `git cherry-pick ${commitHash}`;
@@ -337,7 +358,7 @@ export class GitService implements OnModuleInit {
               .split(' ');
 
             if (lastCommitAuthor !== mail) {
-              const gitAmendCommand = `git commit --amend --author="Author Name <AuthorEmail>" -C ${lastCommitHash}`;
+              const gitAmendCommand = `git commit --amend --author="${username}<${mail}>" -C ${lastCommitHash}`;
               exec(
                 gitAmendCommand,
                 { cwd: this.gitRepoPath },
