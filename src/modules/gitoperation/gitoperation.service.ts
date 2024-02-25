@@ -93,7 +93,6 @@ export class GitService implements OnModuleInit {
     exec(checkRemoteCommand, async (error, stdout, stderr) => {
       let commands;
       if (error) {
-
         // El remoto 'copy' no existe, añadirlo
         commands = [
           `git config user.name "${name}"`,
@@ -103,7 +102,6 @@ export class GitService implements OnModuleInit {
 
         console.log(commands);
       } else {
-
         commands = [
           `git config user.name "${name}"`,
           `git config user.email "${mail}"`,
@@ -214,6 +212,8 @@ export class GitService implements OnModuleInit {
   @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron(mail: string) {
     if (!this.cronJobActive) {
+      console.log('no hare nadas');
+
       return;
     }
 
@@ -337,7 +337,7 @@ export class GitService implements OnModuleInit {
               .split(' ');
 
             if (lastCommitAuthor !== mail) {
-              const gitAmendCommand = `git commit --amend --author="Author Name <AuthorEmail>" -C ${lastCommitHash}`;
+              const gitAmendCommand = `git commit --amend --author="${lastCommitAuthor}<${mail}>" -C ${lastCommitHash}`;
               exec(
                 gitAmendCommand,
                 { cwd: this.gitRepoPath },

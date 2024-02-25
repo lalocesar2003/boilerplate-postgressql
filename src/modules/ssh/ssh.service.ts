@@ -55,6 +55,10 @@ export class SshService {
 
   async privateKeyPathwithdatabase(username: configDto) {
     const { githubusername } = await this.getConfig(username);
+    console.log('me ejecuto para indicar la ruta ');
+
+    console.log(this.gitKeysPath);
+
     return `${this.gitKeysPath}/id_rsa_${githubusername}`;
   }
 
@@ -87,7 +91,7 @@ export class SshService {
         }
         this.logger.log(`SSH key generated successfully: ${stdout}`);
         this.addKeyToSshAgent(username);
-        // this.updateSshConfig(username);
+        this.updateSshConfig(username);
         this.logPublicKey(username);
       });
     }
