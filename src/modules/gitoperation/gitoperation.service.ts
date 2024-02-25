@@ -32,7 +32,7 @@ export class GitService implements OnModuleInit {
   private alreadyVisitedCommits = [];
   private pendingVisitCommits = [];
   private commitsToBeProcessedOnSetup = [];
-  private cronJobArguments: string=null; 
+  private cronJobArguments: string = null;
 
   constructor(
     @InjectRepository(Metadata)
@@ -56,16 +56,15 @@ export class GitService implements OnModuleInit {
     const newUser = this.metadataRepository.create(data);
 
     return this.metadataRepository.save(newUser);
-   
   }
 
-  async cloneAndSetupRepo(linkoriginalrepo: cloneDto) {
+  async cloneAndSetupRepo(linkoriginalrepo: string) {
     const originalRepoGit = await this.metadataRepository.findOne({
-      where: { linkoriginalrepo: linkoriginalrepo.linkoriginalrepo },
+      where: { linkoriginalrepo: linkoriginalrepo },
     });
 
     if (!originalRepoGit) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      throw new HttpException('User not found ', HttpStatus.NOT_FOUND);
     }
     if (!fs.existsSync(this.gitRepoPath)) {
       const gitCloneCommand = `git clone ${originalRepoGit.linkoriginalrepo} ${this.gitRepoPath}`;
@@ -84,13 +83,12 @@ export class GitService implements OnModuleInit {
       this.setupGitConfig(linkoriginalrepo);
     }
     this.cronJobActive = true;
-    this.cronJobArguments=linkoriginalrepo.linkoriginalrepo
-
+    this.cronJobArguments = linkoriginalrepo;
   }
 
-  async setupGitConfig(linkoriginalrepo: cloneDto) {
+  async setupGitConfig(linkoriginalrepo: string) {
     const userFound = this.metadataRepository.findOne({
-      where: { linkoriginalrepo: linkoriginalrepo.linkoriginalrepo },
+      where: { linkoriginalrepo: linkoriginalrepo },
     });
     const name = (await userFound).username;
     const mail = (await userFound).email;
@@ -190,7 +188,7 @@ export class GitService implements OnModuleInit {
   private async checkoutLastProcessedCommit() {
     const lastVisitedCommit = await this.commitRepository.findOne({
       where: { visited: true },
-      order: { id: 'DESC' }, // Asumiendo que 'id' es un campo autoincremental
+      order: { id: 'DESC' },
     });
 
     if (lastVisitedCommit) {
@@ -216,30 +214,23 @@ export class GitService implements OnModuleInit {
   }
 
   @Cron(CronExpression.EVERY_30_SECONDS)
-
-
   async handleCron() {
- 
-    
     const userFound = this.metadataRepository.findOne({
       where: { linkoriginalrepo: this.cronJobArguments },
     });
     const username = (await userFound).username;
     const mail = (await userFound).email;
 
-    
-    
-    
     if (!this.cronJobActive) {
       console.log('no hare nadas');
-     
+
       return;
     }
 
     this.logger.debug('Running cron job');
     console.log('pending commits', this.pendingVisitCommits);
     console.log('already visited commits', this.alreadyVisitedCommits);
-    await this.checkForNewCommits(mail,username);
+    await this.checkForNewCommits(mail, username);
   }
   private async markCommitAsVisited(commitHash: string) {
     let commit = await this.commitRepository.findOne({ where: { commitHash } });
@@ -251,7 +242,7 @@ export class GitService implements OnModuleInit {
     await this.commitRepository.save(commit);
   }
 
-  private async checkForNewCommits(mail: string,username:string) {
+  private async checkForNewCommits(mail: string, username: string) {
     const gitFetchCommand = 'git fetch';
     exec(gitFetchCommand, { cwd: this.gitRepoPath }, (fetchError) => {
       if (fetchError) {
@@ -295,7 +286,7 @@ export class GitService implements OnModuleInit {
 
           const commitToVisit = this.pendingVisitCommits.shift();
           this.logger.log(`Visiting commit ${commitToVisit}`);
-          this.processCommit(commitToVisit, mail,username);
+          this.processCommit(commitToVisit, mail, username);
         },
       );
     });
@@ -322,9 +313,7 @@ export class GitService implements OnModuleInit {
     // Similar para commitsToBeProcessedOnSetup si es necesario
   }
 
-  private processCommit(commitHash: string, mail: string,username:string) {
-    
-    
+  private processCommit(commitHash: string, mail: string, username: string) {
     console.log(commitHash);
 
     const cherryPickLastCommit = `git cherry-pick ${commitHash}`;

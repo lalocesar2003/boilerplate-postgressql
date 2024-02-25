@@ -7,6 +7,7 @@ import { sshdata } from './ssh.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { configDto } from './dto/config.dto';
+import { promises as fsPromises } from 'fs';
 
 @Injectable()
 export class SshService {
@@ -40,9 +41,9 @@ export class SshService {
     return this.sshrepository.save(newUser);
   }
 
-  async getConfig(username: configDto) {
+  async getConfig(username: string) {
     const config = await this.sshrepository.findOne({
-      where: { githubusername: username.githubusername },
+      where: { githubusername: username },
     });
     if (!config) {
       throw new HttpException(
@@ -53,7 +54,7 @@ export class SshService {
     return config;
   }
 
-  async privateKeyPathwithdatabase(username: configDto) {
+  async privateKeyPathwithdatabase(username: string) {
     const { githubusername } = await this.getConfig(username);
     console.log('me ejecuto para indicar la ruta ');
 
@@ -62,12 +63,12 @@ export class SshService {
     return `${this.gitKeysPath}/id_rsa_${githubusername}`;
   }
 
-  async publicKeyPathwithdatabase(username: configDto) {
+  async publicKeyPathwithdatabase(username: string) {
     const privateKeyPath = await this.privateKeyPathwithdatabase(username);
     return `${privateKeyPath}.pub`;
   }
 
-  async generateSSHKey(username: configDto) {
+  async generateSSHKey(username: string): Promise<string> {
     const { githubemail } = await this.getConfig(username);
     const privateKeyPath = await this.privateKeyPathwithdatabase(username);
     console.log(privateKeyPath);
@@ -78,28 +79,38 @@ export class SshService {
 
     if (fs.existsSync(privateKeyPath)) {
       this.logger.log(`Private key file already exists: ${privateKeyPath}`);
+      return this.logPublicKey(username); // Asumiendo que esto devuelve lo que necesitas.
     } else {
-      const sshKeygenCommand = `ssh-keygen -t rsa -C "${githubemail}" -f "${privateKeyPath}" -N ""`;
-      exec(sshKeygenCommand, (error, stdout, stderr) => {
-        if (error) {
-          this.logger.error(`Error generating SSH key: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          this.logger.error(`SSH keygen stderr: ${stderr}`);
-          return;
-        }
-        this.logger.log(`SSH key generated successfully: ${stdout}`);
-        this.addKeyToSshAgent(username);
-        this.updateSshConfig(username);
-        this.logPublicKey(username);
+      return new Promise((resolve, reject) => {
+        const sshKeygenCommand = `ssh-keygen -t rsa -C "${githubemail}" -f "${privateKeyPath}" -N ""`;
+        exec(sshKeygenCommand, async (error, stdout, stderr) => {
+          if (error) {
+            this.logger.error(`Error generating SSH key: ${error.message}`);
+            reject(error);
+            return;
+          }
+          if (stderr) {
+            this.logger.error(`SSH keygen stderr: ${stderr}`);
+            reject(new Error(stderr));
+            return;
+          }
+          this.logger.log(`SSH key generated successfully: ${stdout}`);
+          // Procesos adicionales aquí, si son necesarios.
+          try {
+            const data = await this.logPublicKey(username);
+            resolve(data); // Resuelve la promesa con el resultado deseado.
+          } catch (e) {
+            reject(e); // Rechaza la promesa si hay un error.
+          }
+        });
       });
     }
   }
 
-  private async addKeyToSshAgent(username: configDto) {
+  private async addKeyToSshAgent(username: string) {
     const privateKeyPath = await this.privateKeyPathwithdatabase(username);
     const sshAddCommand = `ssh-add ${privateKeyPath}`;
+
     exec(sshAddCommand, (addError, addStdout, addStderr) => {
       console.log(addError);
       console.log(addStdout);
@@ -112,7 +123,7 @@ export class SshService {
     });
   }
 
-  private async updateSshConfig(username: configDto) {
+  private async updateSshConfig(username: string) {
     const { githubemail, githubusername } = await this.getConfig(username);
     const privateKeyPath = await this.privateKeyPathwithdatabase(username);
     const sshConfigPath = path.join(process.env.HOME || '', '.ssh', 'config');
@@ -138,17 +149,15 @@ export class SshService {
     });
   }
 
-  private async logPublicKey(username: configDto) {
-    const publicKeyPath = await this.publicKeyPathwithdatabase(username);
-    fs.readFile(publicKeyPath, 'utf8', (readError, data) => {
-      if (readError) {
-        this.logger.error(
-          `Error reading public key file: ${readError.message}`,
-        );
-        return;
-      }
+  private async logPublicKey(username: string) {
+    try {
+      const publicKeyPath = await this.publicKeyPathwithdatabase(username);
+      const data = await fsPromises.readFile(publicKeyPath, 'utf8');
       this.logger.log(`Public key content:\n${data}`);
-    });
-    console.log('scrip is running');
+      console.log('script is running');
+      return data;
+    } catch (error) {
+      this.logger.error(`Error reading public key file: ${error.message}`);
+    }
   }
 }

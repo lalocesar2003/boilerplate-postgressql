@@ -7,11 +7,8 @@ export class GitoperationController {
   constructor(private gitoperation: GitService) {}
 
   @Post('metadata')
-  getrepostandmetada(@Body() newuser: metadataDto) {
-    return this.gitoperation.createMetadata(newuser);
-  }
-  @Post('clone')
-  cloneandsetup(@Body() username: cloneDto) {
-    return this.gitoperation.cloneAndSetupRepo(username);
+  async getrepostandmetada(@Body() newuser: metadataDto) {
+    await this.gitoperation.createMetadata(newuser);
+    return this.gitoperation.cloneAndSetupRepo(newuser.linkoriginalrepo);
   }
 }
