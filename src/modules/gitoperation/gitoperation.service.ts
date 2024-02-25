@@ -104,7 +104,7 @@ export class GitService implements OnModuleInit {
           `git remote add ${this.copyRemoteName} ${(await userFound).linkcopyrepo}`,
         ];
 
-        console.log(commands);
+
       } else {
         commands = [
           `git config user.name "${name}"`,
@@ -222,7 +222,7 @@ export class GitService implements OnModuleInit {
     const mail = (await userFound).email;
 
     if (!this.cronJobActive) {
-      console.log('no hare nadas');
+    
 
       return;
     }
@@ -314,10 +314,9 @@ export class GitService implements OnModuleInit {
   }
 
   private processCommit(commitHash: string, mail: string, username: string) {
-    console.log(commitHash);
-
+   
     const cherryPickLastCommit = `git cherry-pick ${commitHash}`;
-    console.log(cherryPickLastCommit);
+   
 
     exec(
       cherryPickLastCommit,
@@ -360,8 +359,7 @@ export class GitService implements OnModuleInit {
                   }
                   const gitPushCommand = `git push ${this.copyRemoteName} main`;
 
-                  console.log(gitPushCommand);
-
+              
                   exec(
                     gitPushCommand,
                     { cwd: this.gitRepoPath },
