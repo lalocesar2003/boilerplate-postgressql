@@ -1,7 +1,7 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class sshDto {
   @IsNotEmpty()
-  githubusername: string;
+  githubUsername: string;
 
   @IsNotEmpty()
   githubemail: string;

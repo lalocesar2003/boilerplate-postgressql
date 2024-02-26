@@ -13,13 +13,13 @@ import { configDto } from './dto/config.dto';
 export class SshController {
   constructor(private sshService: SshService) {}
 
-  @Post('data')
+  @Post('generatesshkey')
   async getdata(@Body() data: sshDto) {
     const githubusername = data;
     await this.sshService.createdata(data);
     try {
       const data = await this.sshService.generateSSHKey(
-        githubusername.githubusername,
+        githubusername.githubUsername,
       );
       return {
         message: 'SSH Key generated successfully  ' + `publickey:${data}`,

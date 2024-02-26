@@ -43,7 +43,7 @@ export class SshService {
 
   async getConfig(username: string) {
     const config = await this.sshrepository.findOne({
-      where: { githubusername: username },
+      where: { githubUsername: username },
     });
     if (!config) {
       throw new HttpException(
@@ -55,12 +55,12 @@ export class SshService {
   }
 
   async privateKeyPathwithdatabase(username: string) {
-    const { githubusername } = await this.getConfig(username);
+    const { githubUsername } = await this.getConfig(username);
     console.log('me ejecuto para indicar la ruta ');
 
     console.log(this.gitKeysPath);
 
-    return `${this.gitKeysPath}/id_rsa_${githubusername}`;
+    return `${this.gitKeysPath}/id_rsa_${githubUsername}`;
   }
 
   async publicKeyPathwithdatabase(username: string) {
@@ -79,7 +79,7 @@ export class SshService {
 
     if (fs.existsSync(privateKeyPath)) {
       this.logger.log(`Private key file already exists: ${privateKeyPath}`);
-      return this.logPublicKey(username); // Asumiendo que esto devuelve lo que necesitas.
+      return this.logPublicKey(username);
     } else {
       return new Promise((resolve, reject) => {
         const sshKeygenCommand = `ssh-keygen -t rsa -C "${githubemail}" -f "${privateKeyPath}" -N ""`;
@@ -95,12 +95,14 @@ export class SshService {
             return;
           }
           this.logger.log(`SSH key generated successfully: ${stdout}`);
-          // Procesos adicionales aquí, si son necesarios.
+         
           try {
+             await this.addKeyToSshAgent(username);
+            await this.updateSshConfig(username);
             const data = await this.logPublicKey(username);
-            resolve(data); // Resuelve la promesa con el resultado deseado.
+            resolve(data); 
           } catch (e) {
-            reject(e); // Rechaza la promesa si hay un error.
+            reject(e);
           }
         });
       });
@@ -124,10 +126,10 @@ export class SshService {
   }
 
   private async updateSshConfig(username: string) {
-    const { githubemail, githubusername } = await this.getConfig(username);
+    const { githubemail, githubUsername } = await this.getConfig(username);
     const privateKeyPath = await this.privateKeyPathwithdatabase(username);
     const sshConfigPath = path.join(process.env.HOME || '', '.ssh', 'config');
-    const configContent = `#${githubusername} account\nHost github.com-${githubusername}\n  HostName github.com\n  User git\n  IdentityFile ${privateKeyPath}\n`;
+    const configContent = `#${githubUsername} account\nHost github.com-${githubUsername}\n  HostName github.com\n  User git\n  IdentityFile ${privateKeyPath}\n`;
     fs.readFile(sshConfigPath, 'utf8', (readError, data) => {
       if (readError && readError.code !== 'ENOENT') {
         this.logger.error(

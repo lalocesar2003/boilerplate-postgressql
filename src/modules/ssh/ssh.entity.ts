@@ -5,7 +5,7 @@ export class sshdata {
   id: number;
 
   @Column()
-  githubusername: string;
+  githubUsername: string;
 
   @Column()
   githubemail: string;

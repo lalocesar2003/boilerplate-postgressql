@@ -6,7 +6,7 @@ import { cloneDto } from './dto/clone.dto';
 export class GitoperationController {
   constructor(private gitoperation: GitService) {}
 
-  @Post('metadata')
+  @Post('cloneandsetup')
   async getrepostandmetada(@Body() newuser: metadataDto) {
     await this.gitoperation.createMetadata(newuser);
     return this.gitoperation.cloneAndSetupRepo(newuser.linkoriginalrepo);

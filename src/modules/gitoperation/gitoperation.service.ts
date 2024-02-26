@@ -80,7 +80,7 @@ export class GitService implements OnModuleInit {
       this.logger.log(
         'El repositorio ya ha sido clonado. Continuando con la configuración.',
       );
-      this.setupGitConfig(linkoriginalrepo);
+      
     }
     this.cronJobActive = true;
     this.cronJobArguments = linkoriginalrepo;
@@ -117,6 +117,7 @@ export class GitService implements OnModuleInit {
         if (!hasCommits) {
           this.processInitialCommits(name, mail);
         } else {
+          console.log('Commits already exist');
         }
       });
     });
@@ -215,15 +216,18 @@ export class GitService implements OnModuleInit {
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron() {
+    try{
     const userFound = this.metadataRepository.findOne({
       where: { linkoriginalrepo: this.cronJobArguments },
     });
+    if (!userFound) {
+      this.logger.debug('No se encontró el usuario, saltando la ejecución del cron job.');
+      return; // Termina la ejecución si no se encuentra el usuario
+    }
     const username = (await userFound).username;
     const mail = (await userFound).email;
 
     if (!this.cronJobActive) {
-    
-
       return;
     }
 
@@ -231,7 +235,10 @@ export class GitService implements OnModuleInit {
     console.log('pending commits', this.pendingVisitCommits);
     console.log('already visited commits', this.alreadyVisitedCommits);
     await this.checkForNewCommits(mail, username);
+  } catch (error) {
+    this.logger.debug(`waiting repositories to be cloned`);
   }
+}
   private async markCommitAsVisited(commitHash: string) {
     let commit = await this.commitRepository.findOne({ where: { commitHash } });
     if (!commit) {
