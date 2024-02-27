@@ -117,7 +117,7 @@ export class GitService implements OnModuleInit {
         if (!hasCommits) {
           this.processInitialCommits(name, mail);
         } else {
-          console.log('Commits already exist');
+          console.log('Config already set up. Skipping initial commits processing.');
         }
       });
     });
@@ -200,15 +200,22 @@ export class GitService implements OnModuleInit {
         `git checkout ${lastVisitedCommit.commitHash}`,
         { cwd: this.gitRepoPath },
         (error, stdout, stderr) => {
+          
           if (error) {
             this.logger.error(
               `Error checking out to last visited commit: ${error.message}`,
             );
             return;
           }
-          // Aquí puedes agregar más lógica si es necesario después del checkout
-        },
-      );
+          exec(`git checkout main`, { cwd: this.gitRepoPath }, (error, stdout, stderr) => {
+            if (error) {
+              this.logger.error(`Error returning to 'main' branch: ${error.message}`);
+              return;
+            }
+            this.logger.log(`Successfully returned to 'main' branch.`);
+          });
+        });
+        
     } else {
       this.logger.log('No visited commits found, staying on current commit.');
     }
