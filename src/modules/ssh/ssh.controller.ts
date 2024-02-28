@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { SshService } from './ssh.service';
 import { sshDto } from './dto/ssh.dto';
-import { configDto } from './dto/config.dto';
+
 
 @Controller('ssh')
 export class SshController {
@@ -28,4 +28,6 @@ export class SshController {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+  
+ 
 }

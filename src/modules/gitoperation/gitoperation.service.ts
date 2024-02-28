@@ -10,7 +10,7 @@ import { Metadata } from './gitoperation.entity';
 import { Repository } from 'typeorm';
 import { createUserDto } from '../user/dto/create-user.dto';
 import { metadataDto } from './dto/metadata.dto';
-import { cloneDto } from './dto/clone.dto';
+
 import * as path from 'path';
 import { exec } from 'child_process';
 import * as fs from 'fs';
@@ -33,6 +33,9 @@ export class GitService implements OnModuleInit {
   private pendingVisitCommits = [];
   private commitsToBeProcessedOnSetup = [];
   private cronJobArguments: string = null;
+  public setCronJobActive(isActive: boolean): void {
+    this.cronJobActive = isActive;
+  }
 
   constructor(
     @InjectRepository(Metadata)
@@ -224,18 +227,21 @@ export class GitService implements OnModuleInit {
   @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron() {
     try{
+      console.log("estoy intentando");
+      
     const userFound = this.metadataRepository.findOne({
       where: { linkoriginalrepo: this.cronJobArguments },
     });
     if (!userFound) {
       this.logger.debug('No se encontró el usuario, saltando la ejecución del cron job.');
-      return; // Termina la ejecución si no se encuentra el usuario
+      return; 
     }
     const username = (await userFound).username;
     const mail = (await userFound).email;
 
     if (!this.cronJobActive) {
-      return;
+      this.logger.debug('Cron job is paused, skipping execution.');
+      return; // Detiene la ejecución si el cron job está pausado
     }
 
     this.logger.debug('Running cron job');

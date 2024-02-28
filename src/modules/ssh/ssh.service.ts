@@ -6,7 +6,7 @@ import { sshDto } from './dto/ssh.dto';
 import { sshdata } from './ssh.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { configDto } from './dto/config.dto';
+
 import { promises as fsPromises } from 'fs';
 
 @Injectable()
