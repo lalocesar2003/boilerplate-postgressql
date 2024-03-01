@@ -14,9 +14,10 @@ import { metadataDto } from './dto/metadata.dto';
 import * as path from 'path';
 import { exec } from 'child_process';
 import * as fs from 'fs';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { CommitEntity } from './commit.entity';
 import { log } from 'console';
+import { CronJob } from 'cron';
 
 @Injectable()
 export class GitService implements OnModuleInit {
@@ -34,18 +35,37 @@ export class GitService implements OnModuleInit {
   private commitsToBeProcessedOnSetup = [];
   private cronJobArguments: string = null;
   public setCronJobActive(isActive: boolean): void {
-    this.cronJobActive = isActive;
+    const job = this.schedulerRegistry.getCronJob('gitServiceCronJob'); // Asume que este es el nombre de tu cron job
+  
+    if (isActive) {
+      job.start();
+      this.logger.log('Cron job started');
+    } else {
+      job.stop();
+      this.logger.log('Cron job stopped');
+    }
   }
+  
 
   constructor(
     @InjectRepository(Metadata)
     private metadataRepository: Repository<Metadata>,
     @InjectRepository(CommitEntity)
     private commitRepository: Repository<CommitEntity>,
+    private schedulerRegistry: SchedulerRegistry,
   ) {}
   async onModuleInit() {
     await this.loadCommits();
     await this.checkoutLastProcessedCommit();
+    const gitServiceCronJob = new CronJob(CronExpression.EVERY_30_SECONDS, async () => {
+      await this.handleCron();
+    });
+  
+    // Registrar el CronJob en el SchedulerRegistry
+    this.schedulerRegistry.addCronJob('gitServiceCronJob', gitServiceCronJob);
+  
+    // Opcionalmente, iniciar el cron job ahora o basado en alguna condición
+    gitServiceCronJob.start();
   }
 
   async createMetadata(data: metadataDto) {
@@ -224,7 +244,7 @@ export class GitService implements OnModuleInit {
     }
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+
   async handleCron() {
     try{
       console.log("estoy intentando");
@@ -414,4 +434,6 @@ export class GitService implements OnModuleInit {
       },
     );
   }
+  
+  
 }

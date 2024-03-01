@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { GitOperationModule } from './modules/gitoperation/gitoperation.module';
 import { SshModule } from './modules/ssh/ssh.module';
+import { CronModule } from './modules/cron/cron.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SshModule } from './modules/ssh/ssh.module';
     HealthModule,
     GitOperationModule,
     SshModule,
+    CronModule
   ],
   controllers: [AppController],
   providers: [AppService],
